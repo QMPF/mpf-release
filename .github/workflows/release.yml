@@ -92,15 +92,10 @@ jobs:
           download "mpf-ui-components" || true
           download "mpf-host" || true
           download "mpf-plugin-orders" || true
-          # download "mpf-plugin-rules" || true  # 暂时排除，调试用
+          download "mpf-plugin-rules" || true
           
-          # Create config
-          cat > dist/config/paths.json << 'CONFIG'
-          {
-            "pluginPath": "../plugins",
-            "extraQmlPaths": ["../qml"]
-          }
-          CONFIG
+          # Note: paths.json no longer needed - mpf-host uses MPF_SDK_ROOT env var
+          # set by mpf-dev, or falls back to paths relative to executable
           
           ls -la dist/
 
