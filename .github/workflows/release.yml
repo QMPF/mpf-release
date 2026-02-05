@@ -102,38 +102,9 @@ jobs:
           
           ls -la dist/
 
-      - name: Deploy Qt dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          # Run windeployqt ONLY on the host executable
-          # Do NOT run on plugin DLLs - they share the same Qt runtime as the host
-          # windeployqt deploys to the directory containing the executable
-          $qtBin = "$env:QT_ROOT_DIR\bin"
-          $hostExe = "dist\bin\mpf-host.exe"
-          
-          if (Test-Path $hostExe) {
-            Write-Host "Running windeployqt on $hostExe"
-            & "$qtBin\windeployqt.exe" --release --qmldir dist\qml $hostExe
-            
-            Write-Host "=== bin/ directory after windeployqt ==="
-            Get-ChildItem dist\bin | Select-Object Name
-          } else {
-            Write-Host "Warning: mpf-host.exe not found"
-            exit 1
-          }
-
-      - name: Deploy Qt dependencies (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          # Linux: Copy essential Qt libraries if not already present
-          # Most Qt libs are dynamically linked, ensure key ones are bundled
-          if [[ -f "dist/bin/mpf-host" ]]; then
-            echo "Checking mpf-host dependencies..."
-            ldd dist/bin/mpf-host || true
-          fi
-
+      # NOTE: windeployqt disabled for now - users expected to have Qt installed
+      # TODO: Re-enable for standalone distribution later
+      
       - name: Package
         shell: bash
         run: |
