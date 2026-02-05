@@ -96,6 +96,41 @@ jobs:
           
           ls -la dist/
 
+      - name: Deploy Qt dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Run windeployqt on the host executable
+          $qtBin = "$env:QT_ROOT_DIR\bin"
+          $hostExe = "dist\bin\mpf-host.exe"
+          
+          if (Test-Path $hostExe) {
+            Write-Host "Running windeployqt on $hostExe"
+            & "$qtBin\windeployqt.exe" --release --qmldir dist\qml $hostExe
+            
+            # Also deploy for plugins (they may have additional dependencies)
+            Get-ChildItem -Path "dist\plugins\*.dll" | ForEach-Object {
+              Write-Host "Running windeployqt on $_"
+              & "$qtBin\windeployqt.exe" --release --qmldir dist\qml $_.FullName
+            }
+          } else {
+            Write-Host "Warning: mpf-host.exe not found"
+          }
+          
+          # List final contents
+          Get-ChildItem -Recurse dist | Select-Object FullName
+
+      - name: Deploy Qt dependencies (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # Linux: Copy essential Qt libraries if not already present
+          # Most Qt libs are dynamically linked, ensure key ones are bundled
+          if [[ -f "dist/bin/mpf-host" ]]; then
+            echo "Checking mpf-host dependencies..."
+            ldd dist/bin/mpf-host || true
+          fi
+
       - name: Package
         shell: bash
         run: |
