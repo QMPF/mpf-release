@@ -90,7 +90,7 @@ jobs:
           download "mpf-ui-components" || true
           download "mpf-host" || true
           download "mpf-plugin-orders" || true
-          download "mpf-plugin-rules" || true
+          # download "mpf-plugin-rules" || true  # 暂时排除，调试用
           
           # Create config
           cat > dist/config/paths.json << 'CONFIG'
