@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'  # Trigger on version tags
+  repository_dispatch:
+    types: [plugin-released, host-released, sdk-released]  # Auto-trigger from upstream
   workflow_dispatch:
     inputs:
       version:
