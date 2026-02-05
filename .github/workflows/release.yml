@@ -106,7 +106,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Run windeployqt on the host executable
+          # Run windeployqt ONLY on the host executable
+          # Do NOT run on plugin DLLs - they share the same Qt runtime as the host
+          # windeployqt deploys to the directory containing the executable
           $qtBin = "$env:QT_ROOT_DIR\bin"
           $hostExe = "dist\bin\mpf-host.exe"
           
@@ -114,17 +116,12 @@ jobs:
             Write-Host "Running windeployqt on $hostExe"
             & "$qtBin\windeployqt.exe" --release --qmldir dist\qml $hostExe
             
-            # Also deploy for plugins (they may have additional dependencies)
-            Get-ChildItem -Path "dist\plugins\*.dll" | ForEach-Object {
-              Write-Host "Running windeployqt on $_"
-              & "$qtBin\windeployqt.exe" --release --qmldir dist\qml $_.FullName
-            }
+            Write-Host "=== bin/ directory after windeployqt ==="
+            Get-ChildItem dist\bin | Select-Object Name
           } else {
             Write-Host "Warning: mpf-host.exe not found"
+            exit 1
           }
-          
-          # List final contents
-          Get-ChildItem -Recurse dist | Select-Object FullName
 
       - name: Deploy Qt dependencies (Linux)
         if: runner.os == 'Linux'
