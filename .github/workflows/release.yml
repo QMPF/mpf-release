@@ -36,6 +36,8 @@ jobs:
 
       - name: Calculate version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [[ -n "${{ github.event.inputs.version }}" ]]; then
             # Manual version specified
@@ -47,9 +49,9 @@ jobs:
             # Nightly build
             VERSION="$(date +%Y.%m.%d)-nightly"
           else
-            # workflow_dispatch without version - auto bump from latest tag
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-            echo "Latest tag: $LATEST_TAG"
+            # workflow_dispatch without version - get latest release via API (more reliable)
+            LATEST_TAG=$(gh release view -R ${{ github.repository }} --json tagName -q '.tagName' 2>/dev/null || echo "v1.0.0")
+            echo "Latest release tag: $LATEST_TAG"
             LATEST_VERSION=${LATEST_TAG#v}
             IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
             NEW_PATCH=$((PATCH + 1))
