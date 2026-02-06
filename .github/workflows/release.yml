@@ -55,6 +55,8 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
+          cache-key-prefix: 'qt-${{ env.QT_VERSION }}'
+          aqtversion: '==3.1.*'
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
