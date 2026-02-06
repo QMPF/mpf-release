@@ -10,11 +10,16 @@ on:
     inputs:
       version:
         description: 'Release version (e.g., 2026.02.04)'
-        required: true
+        required: false
         default: ''
   schedule:
     # Nightly build at 00:00 UTC
     - cron: '0 0 * * *'
+
+# Prevent concurrent builds - if cascade triggers multiple times, only run once
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   QT_VERSION: '6.8.3'
