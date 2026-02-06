@@ -4,12 +4,10 @@ on:
   push:
     tags:
       - 'v*'  # Trigger on version tags
-  repository_dispatch:
-    types: [plugin-released, host-released, sdk-released]  # Auto-trigger from upstream
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 2026.02.04)'
+        description: 'Release version (empty=auto bump)'
         required: false
         default: ''
   schedule:
@@ -18,14 +16,52 @@ on:
 
 # Prevent concurrent builds - if cascade triggers multiple times, only run once
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: true
+  group: release-build
+  cancel-in-progress: false
 
 env:
   QT_VERSION: '6.8.3'
 
 jobs:
+  # Calculate version first
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate version
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            # Manual version specified
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            # Tag push - use tag version
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # Nightly build
+            VERSION="$(date +%Y.%m.%d)-nightly"
+          else
+            # workflow_dispatch without version - auto bump from latest tag
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+            echo "Latest tag: $LATEST_TAG"
+            LATEST_VERSION=${LATEST_TAG#v}
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+            NEW_PATCH=$((PATCH + 1))
+            VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+
   build:
+    needs: resolve-version
     strategy:
       fail-fast: false
       matrix:
@@ -41,19 +77,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set version
-        id: version
-        shell: bash
-        run: |
-          if [[ -n "${{ github.event.inputs.version }}" ]]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            # Extract version from tag (e.g., v1.0.5 -> 1.0.5)
-            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-          else
-            echo "version=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
-          fi
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -89,7 +112,6 @@ jobs:
               tar -xzf /tmp/$artifact -C /tmp/extract_$repo
             fi
             
-            # Copy to dist
             cp -r /tmp/extract_$repo/* dist/ 2>/dev/null || true
             rm -rf /tmp/extract_$repo /tmp/$artifact
           }
@@ -101,13 +123,7 @@ jobs:
           download "mpf-plugin-orders" || true
           download "mpf-plugin-rules" || true
           
-          # Note: paths.json no longer needed - mpf-host uses MPF_SDK_ROOT env var
-          # set by mpf-dev, or falls back to paths relative to executable
-          
           ls -la dist/
-
-      # NOTE: windeployqt disabled for now - users expected to have Qt installed
-      # TODO: Re-enable for standalone distribution later
       
       - name: Package
         shell: bash
@@ -126,33 +142,43 @@ jobs:
           path: mpf-${{ matrix.platform }}.*
 
   release:
-    needs: build
+    needs: [resolve-version, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
     steps:
-      - name: Set version
-        id: version
-        run: |
-          if [[ -n "${{ github.event.inputs.version }}" ]]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-          else
-            echo "version=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
-          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.DISPATCH_TOKEN }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      - name: Create tag if needed
+        if: github.ref_type != 'tag'
+        run: |
+          TAG="${{ needs.resolve-version.outputs.tag }}"
+          
+          # Check if tag already exists
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping tag creation"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "Created and pushed tag $TAG"
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: MPF Release ${{ steps.version.outputs.version }}
+          tag_name: ${{ needs.resolve-version.outputs.tag }}
+          name: MPF Release ${{ needs.resolve-version.outputs.version }}
           files: artifacts/**/*
           generate_release_notes: true
           draft: false
