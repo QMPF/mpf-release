@@ -175,10 +175,10 @@ Host 在 MinGW 下使用 `-static-libgcc -static-libstdc++` 避免 CRT 不匹配
 ## 测试
 
 ```bash
-# EventBus 测试（29 个）
+# EventBus 测试（27 个）
 cd mpf-host/tests/build && ./test_event_bus
 
-# 插件依赖测试（12 个）
+# 插件依赖测试（10 个）
 cd mpf-host/tests/build && ./test_plugin_dependencies
 ```
 

@@ -43,7 +43,7 @@
 │       ├── HttpClient/
 │       ├── UiComponents/
 │       └── Plugins/
-├── current -> v1.0.0              # 符号链接，指向当前使用版本
+├── current.txt                    # 记录当前使用版本（内容如 "v1.0.0"）
 └── dev.json                       # 开发配置（哪些组件用源码模式）
 ```
 
@@ -120,12 +120,13 @@ mpf-dev env
    - **Linux**: `LD_LIBRARY_PATH`, `QML_IMPORT_PATH`, `QT_PLUGIN_PATH`
    - **Windows**: `PATH`, `QML_IMPORT_PATH`, `QT_PLUGIN_PATH`
 3. 源码模式的路径插入到最前面（优先级最高）
-4. 启动 `~/.mpf-sdk/current/bin/mpf-host`
+4. 读取 `~/.mpf-sdk/current.txt` 获取版本，启动对应版本的 `mpf-host`
 
 ```python
-# 伪代码
+# 伪代码（实际 mpf-dev 用 Rust 实现，此处用 Python 说明逻辑）
 def build_env():
-    sdk = Path.home() / ".mpf-sdk" / "current"
+    sdk_version = (Path.home() / ".mpf-sdk" / "current.txt").read_text().strip()
+    sdk = Path.home() / ".mpf-sdk" / sdk_version
     dev = json.load(open(sdk.parent / "dev.json"))
     
     lib_paths = []
@@ -211,7 +212,7 @@ mpf-release (打包所有组件 → 生成SDK发布包)
 
 ## 实现计划
 
-- [ ] 创建 `mpf-dev` Python CLI 工具（放在 mpf-sdk 仓库）
+- [ ] 创建 `mpf-dev` Rust CLI 工具（独立仓库 mpf-dev）
 - [ ] 修改 mpf-release 的打包逻辑，生成符合目录结构的SDK包
 - [ ] 更新各组件的 CMakeLists.txt 支持 `MPF_SDK_ROOT`
 - [ ] 编写使用文档
@@ -220,7 +221,7 @@ mpf-release (打包所有组件 → 生成SDK发布包)
 
 ```bash
 # 1. 首次设置（只需一次）
-pip install mpf-dev  # 或下载单文件脚本
+cargo install mpf-dev  # 或从 GitHub Releases 下载二进制
 mpf-dev setup
 
 # 2. 克隆自己负责的组件

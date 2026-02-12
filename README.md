@@ -16,6 +16,11 @@ Qt Modular Plugin Framework - Integrated Release
 | Host | [mpf-host](https://github.com/dyzdyz010/mpf-host) |
 | Orders Plugin | [mpf-plugin-orders](https://github.com/dyzdyz010/mpf-plugin-orders) |
 | Rules Plugin | [mpf-plugin-rules](https://github.com/dyzdyz010/mpf-plugin-rules) |
+| Dev CLI | [mpf-dev](https://github.com/dyzdyz010/mpf-dev) |
+
+## 文档
+
+详细文档见 [docs/](./docs/) 目录。
 
 ## 下载
 
