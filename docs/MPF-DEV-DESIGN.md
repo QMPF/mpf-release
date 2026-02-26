@@ -1,6 +1,6 @@
 # MPF 开发环境设计文档
 
-> 最后更新: 2026-02-12
+> 最后更新: 2026-02-26
 
 ## 核心理念
 
@@ -28,7 +28,7 @@
 │   ├── bin/
 │   │   └── mpf-host(.exe)         # 主程序
 │   ├── lib/
-│   │   ├── libmpf-sdk.so/.dll
+│   │   ├── （mpf-sdk 是 header-only，无库文件）
 │   │   ├── libmpf-http-client.so/.dll
 │   │   └── libmpf-ui-components.so/.dll
 │   ├── plugins/
@@ -43,7 +43,7 @@
 │       ├── HttpClient/
 │       ├── UiComponents/
 │       └── Plugins/
-├── current.txt                    # 记录当前使用版本（内容如 "v1.0.0"）
+├── current -> v1.0.26             # junction（Windows）或 symlink（Unix）指向当前版本
 └── dev.json                       # 开发配置（哪些组件用源码模式）
 ```
 
@@ -120,12 +120,12 @@ mpf-dev env
    - **Linux**: `LD_LIBRARY_PATH`, `QML_IMPORT_PATH`, `QT_PLUGIN_PATH`
    - **Windows**: `PATH`, `QML_IMPORT_PATH`, `QT_PLUGIN_PATH`
 3. 源码模式的路径插入到最前面（优先级最高）
-4. 读取 `~/.mpf-sdk/current.txt` 获取版本，启动对应版本的 `mpf-host`
+4. 读取 `~/.mpf-sdk/current` 链接获取版本，启动对应版本的 `mpf-host`
 
 ```python
 # 伪代码（实际 mpf-dev 用 Rust 实现，此处用 Python 说明逻辑）
 def build_env():
-    sdk_version = (Path.home() / ".mpf-sdk" / "current.txt").read_text().strip()
+    sdk_version = (Path.home() / ".mpf-sdk" / "current")
     sdk = Path.home() / ".mpf-sdk" / sdk_version
     dev = json.load(open(sdk.parent / "dev.json"))
     
@@ -179,7 +179,7 @@ target_link_libraries(mpf-http-client
     Qt6::Core
     Qt6::Network
     Qt6::Qml
-    mpf-sdk  # 从SDK链接
+    MPF::foundation-sdk  # header-only SDK
 )
 
 # 安装到build/lib，方便mpf-dev link

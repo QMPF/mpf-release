@@ -142,28 +142,20 @@ mpf-my-component/
 
 **库组件:**
 ```cmake
-cmake_minimum_required(VERSION 3.16)
-project(mpf-my-component VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.21)
+project(mpf-my-component VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
 
-# SDK 路径
-set(MPF_SDK_ROOT "$ENV{HOME}/.mpf-sdk/current" CACHE PATH "MPF SDK root")
-if(WIN32)
-    set(MPF_SDK_ROOT "$ENV{USERPROFILE}/.mpf-sdk/current" CACHE PATH "MPF SDK root" FORCE)
-endif()
-
-# Qt
+# Qt 和 SDK 通过 CMAKE_PREFIX_PATH 发现（mpf-dev init 自动配置）
 find_package(Qt6 REQUIRED COMPONENTS Core Qml)
+find_package(MPF REQUIRED)
 
-# 包含 SDK 头文件
-include_directories("${MPF_SDK_ROOT}/include")
-link_directories("${MPF_SDK_ROOT}/lib")
-
-# 定义库
 add_library(mpf-my-component SHARED
     src/my_component.cpp
+    include/my_component/my_component.h
 )
 
 target_include_directories(mpf-my-component PUBLIC
@@ -172,56 +164,74 @@ target_include_directories(mpf-my-component PUBLIC
 )
 
 target_link_libraries(mpf-my-component
-    Qt6::Core
-    Qt6::Qml
-    mpf-sdk
+    PUBLIC Qt6::Core Qt6::Qml
+    PRIVATE MPF::foundation-sdk  # header-only SDK
 )
 
 # 安装
+include(GNUInstallDirs)
 install(TARGETS mpf-my-component
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ```
 
 **插件组件:**
 ```cmake
-cmake_minimum_required(VERSION 3.16)
-project(mpf-plugin-my VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.21)
+project(mpf-plugin-my VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
 
-# SDK 路径
-set(MPF_SDK_ROOT "$ENV{HOME}/.mpf-sdk/current" CACHE PATH "MPF SDK root")
-if(WIN32)
-    set(MPF_SDK_ROOT "$ENV{USERPROFILE}/.mpf-sdk/current" CACHE PATH "MPF SDK root" FORCE)
-endif()
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(MPF REQUIRED)
+find_package(MPFHttpClient QUIET)  # 可选
 
-find_package(Qt6 REQUIRED COMPONENTS Core Qml)
-
-include_directories("${MPF_SDK_ROOT}/include")
-link_directories("${MPF_SDK_ROOT}/lib")
-
-# 插件是 MODULE 类型
-add_library(mpf-plugin-my MODULE
+# 插件是 SHARED 类型（Qt 插件系统要求）
+add_library(mpf-plugin-my SHARED
     src/my_plugin.cpp
+    include/my_plugin.h
 )
 
-target_link_libraries(mpf-plugin-my
-    Qt6::Core
-    Qt6::Qml
-    mpf-sdk
-    mpf-http-client  # 如果需要
+target_include_directories(mpf-plugin-my PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# 插件安装到 plugins 目录
-install(TARGETS mpf-plugin-my
-    LIBRARY DESTINATION plugins
+target_link_libraries(mpf-plugin-my PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick
+    MPF::foundation-sdk
+    $<$<TARGET_EXISTS:MPF::mpf-http-client>:MPF::mpf-http-client>
+    # 注意：不要链接 MPF::mpf-ui-components！由 Host 加载。
 )
+
+# QML 模块
+set(PLUGIN_QML_FILES qml/MyPage.qml)
+foreach(file ${PLUGIN_QML_FILES})
+    string(REGEX REPLACE "^qml/" "" alias "${file}")
+    set_source_files_properties(${file} PROPERTIES QT_RESOURCE_ALIAS ${alias})
+endforeach()
+
+qt_add_qml_module(mpf-plugin-my
+    URI YourCo.MyModule
+    VERSION 1.0
+    RESOURCE_PREFIX /
+    QML_FILES ${PLUGIN_QML_FILES}
+    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/YourCo/MyModule
+    NO_PLUGIN
+)
+
+# 输出到 plugins 目录
+set_target_properties(mpf-plugin-my PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins
+)
+
+install(TARGETS mpf-plugin-my LIBRARY DESTINATION plugins RUNTIME DESTINATION plugins)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/qml/YourCo DESTINATION qml)
 ```
 
 ---
@@ -574,25 +584,26 @@ mpf-dev versions               # 查看已安装版本
 
 ```
 ~/.mpf-sdk/
-├── v1.0.0/                    # SDK 版本
+├── v1.0.26/                   # SDK 版本
 │   ├── bin/mpf-host
 │   ├── lib/
-│   │   ├── libmpf-sdk.so
-│   │   ├── libmpf-http-client.so
-│   │   └── libmpf-ui-components.so
+│   │   ├── libmpf-http-client.so/.dll
+│   │   └── libmpf-ui-components.so/.dll
 │   ├── include/
-│   │   ├── mpf-sdk/
-│   │   ├── mpf-http-client/
-│   │   └── mpf-ui-components/
+│   │   └── mpf/               # foundation-sdk 头文件（header-only）
 │   ├── plugins/
-│   │   ├── libplugin-orders.so
-│   │   └── libplugin-rules.so
+│   │   ├── liborders-plugin.so/.dll
+│   │   └── librules-plugin.so/.dll
 │   └── qml/
-│       ├── HttpClient/
-│       └── UiComponents/
-├── current.txt                # 当前版本指针
+│       ├── MPF/Components/    # ui-components
+│       ├── MPF/Host/          # host QML
+│       ├── YourCo/Orders/     # orders 插件
+│       └── Biiz/Rules/        # rules 插件
+├── current -> v1.0.26         # junction/symlink 指向当前版本
 └── dev.json                   # 开发配置
 ```
+
+> 注意：mpf-sdk 是纯头文件库，不产生 .so/.dll 文件。
 
 ---
 

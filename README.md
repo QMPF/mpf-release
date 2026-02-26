@@ -8,15 +8,15 @@ Qt Modular Plugin Framework - Integrated Release
 
 ## 组件
 
-| 组件 | 仓库 |
-|------|------|
-| SDK | [mpf-sdk](https://github.com/dyzdyz010/mpf-sdk) |
-| HTTP Client | [mpf-http-client](https://github.com/dyzdyz010/mpf-http-client) |
-| UI Components | [mpf-ui-components](https://github.com/dyzdyz010/mpf-ui-components) |
-| Host | [mpf-host](https://github.com/dyzdyz010/mpf-host) |
-| Orders Plugin | [mpf-plugin-orders](https://github.com/dyzdyz010/mpf-plugin-orders) |
-| Rules Plugin | [mpf-plugin-rules](https://github.com/dyzdyz010/mpf-plugin-rules) |
-| Dev CLI | [mpf-dev](https://github.com/dyzdyz010/mpf-dev) |
+| 组件 | 仓库 | 说明 |
+|------|------|------|
+| SDK | [mpf-sdk](https://github.com/QMPF/mpf-sdk) | 纯头文件接口库 |
+| HTTP Client | [mpf-http-client](https://github.com/QMPF/mpf-http-client) | HTTP 客户端库 |
+| UI Components | [mpf-ui-components](https://github.com/QMPF/mpf-ui-components) | QML 组件库 + C++ 工具类 |
+| Host | [mpf-host](https://github.com/QMPF/mpf-host) | 宿主应用 |
+| Orders Plugin | [mpf-plugin-orders](https://github.com/QMPF/mpf-plugin-orders) | 订单管理示例插件 |
+| Rules Plugin | [mpf-plugin-rules](https://github.com/QMPF/mpf-plugin-rules) | 规则管理示例插件 |
+| Dev CLI | [mpf-dev](https://github.com/QMPF/mpf-dev) | 开发环境 CLI 工具（Rust） |
 
 ## 文档
 
@@ -24,7 +24,7 @@ Qt Modular Plugin Framework - Integrated Release
 
 ## 下载
 
-从 [Releases](https://github.com/dyzdyz010/mpf-release/releases) 页面下载预编译包：
+从 [Releases](https://github.com/QMPF/mpf-release/releases) 页面下载预编译包：
 
 - `mpf-linux-x64.tar.gz` - Linux x64
 - `mpf-windows-x64.zip` - Windows x64
@@ -51,7 +51,7 @@ cd mpf
 
 ```bash
 # 克隆并运行构建脚本
-git clone https://github.com/dyzdyz010/mpf-release.git
+git clone https://github.com/QMPF/mpf-release.git
 cd mpf-release
 ./scripts/build-release.sh
 ```
