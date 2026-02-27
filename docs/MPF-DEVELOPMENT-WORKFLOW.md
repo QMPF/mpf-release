@@ -48,7 +48,7 @@ MPF (Modular Plugin Framework) 采用组件化架构，每个开发者只需关�
 **Windows:**
 ```powershell
 # 下载
-Invoke-WebRequest -Uri "https://github.com/dyzdyz010/mpf-dev/releases/latest/download/mpf-dev-windows-x86_64.zip" -OutFile mpf-dev.zip
+Invoke-WebRequest -Uri "https://github.com/QMPF/mpf-dev/releases/latest/download/mpf-dev-windows-x86_64.zip" -OutFile mpf-dev.zip
 
 # 解压
 Expand-Archive mpf-dev.zip -DestinationPath C:\Tools\mpf-dev
@@ -59,7 +59,7 @@ $env:Path += ";C:\Tools\mpf-dev"
 
 **Linux:**
 ```bash
-curl -LO https://github.com/dyzdyz010/mpf-dev/releases/latest/download/mpf-dev-linux-x86_64.tar.gz
+curl -LO https://github.com/QMPF/mpf-dev/releases/latest/download/mpf-dev-linux-x86_64.tar.gz
 tar xzf mpf-dev-linux-x86_64.tar.gz
 sudo mv mpf-dev /usr/local/bin/
 ```
@@ -361,7 +361,7 @@ jobs:
       - name: Download SDK
         run: |
           mkdir -p deps/sdk
-          curl -L "https://github.com/dyzdyz010/mpf-release/releases/download/${{ env.SDK_VERSION }}/mpf-${{ matrix.platform }}-x64.${{ matrix.platform == 'windows' && 'zip' || 'tar.gz' }}" -o sdk-archive
+          curl -L "https://github.com/QMPF/mpf-release/releases/download/${{ env.SDK_VERSION }}/mpf-${{ matrix.platform }}-x64.${{ matrix.platform == 'windows' && 'zip' || 'tar.gz' }}" -o sdk-archive
           if [ "${{ matrix.platform }}" == "windows" ]; then
             unzip sdk-archive -d deps/sdk
           else

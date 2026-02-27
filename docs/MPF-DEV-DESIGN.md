@@ -225,7 +225,7 @@ cargo install mpf-dev  # 或从 GitHub Releases 下载二进制
 mpf-dev setup
 
 # 2. 克隆自己负责的组件
-git clone https://github.com/dyzdyz010/mpf-http-client
+git clone https://github.com/QMPF/mpf-http-client
 cd mpf-http-client
 
 # 3. 注册为源码开发模式

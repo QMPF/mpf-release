@@ -98,7 +98,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/{bin,lib,plugins,qml,config}
-          BASE_URL="https://github.com/dyzdyz010"
+          BASE_URL="https://github.com/QMPF"
           
           download() {
             local repo=$1
