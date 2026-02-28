@@ -20,7 +20,8 @@ Qt Modular Plugin Framework - Integrated Release
 
 ## 文档
 
-详细文档见 [docs/](./docs/) 目录。
+- 📖 **[MPF 开发环境完整教程](https://github.com/QMPF/mpf-dev/blob/main/docs/USAGE.md)** — 安装指南、命令参考、开发流程、IDE 配置、常见问题
+- 架构设计、开发工作流等详见 [docs/](./docs/) 目录
 
 ## 下载
 
