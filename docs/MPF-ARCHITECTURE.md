@@ -150,8 +150,8 @@ void MyPlugin::stop() {
 简化的导航模型，避免跨 DLL 动态加载 QML 组件的问题：
 
 ```cpp
-// 插件注册主页面 URL
-nav->registerRoute("orders", QUrl::fromLocalFile(qmlFilePath).toString());
+// 插件注册主页面 URL（QML 文件由 qt_add_qml_module 嵌入 DLL 的 qrc 资源）
+nav->registerRoute("orders", "qrc:/YourCo/Orders/OrdersPage.qml");
 
 // Host 使用 getPageUrl() 通过 Loader 加载页面
 QString url = nav->getPageUrl("orders");
