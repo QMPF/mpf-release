@@ -121,6 +121,7 @@ jobs:
           download "mpf-sdk" || true
           download "mpf-http-client" || true
           download "mpf-ui-components" || true
+          download "mpf-math-utils" || true
           download "mpf-host" || true
           download "mpf-plugin-orders" || true
           download "mpf-plugin-rules" || true
