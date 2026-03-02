@@ -51,27 +51,38 @@
 
 ```json
 {
-  "sdk_version": "1.0.0",
+  "sdk_version": "v1.0.33",
   "components": {
-    "http-client": {
+    "host": {
       "mode": "source",
-      "lib": "/home/dev/mpf-http-client/build/lib",
-      "include": "/home/dev/mpf-http-client/include",
-      "qml": "/home/dev/mpf-http-client/qml"
-    },
-    "ui-components": {
-      "mode": "binary"
+      "bin": "/home/dev/mpf-host/build/bin",
+      "qml": "/home/dev/mpf-host/build/qml",
+      "root": "/home/dev/mpf-host"
     },
     "plugin-orders": {
       "mode": "source",
-      "lib": "/home/dev/mpf-plugin-orders/build/lib"
+      "lib": "/home/dev/mpf-plugin-orders/build/plugins",
+      "qml": "/home/dev/mpf-plugin-orders/build/qml",
+      "plugin": "/home/dev/mpf-plugin-orders/build",
+      "root": "/home/dev/mpf-plugin-orders"
     },
-    "plugin-rules": {
-      "mode": "binary"
+    "ui-components": {
+      "mode": "source",
+      "lib": "/home/dev/mpf-ui-components/build",
+      "qml": "/home/dev/mpf-ui-components/build/qml",
+      "root": "/home/dev/mpf-ui-components"
     }
   }
 }
 ```
+
+**字段说明：**
+- `mode` — `"source"` 表示源码开发模式
+- `lib` — 库文件目录
+- `qml` — QML 模块目录
+- `bin` — 可执行文件目录（仅 host）
+- `plugin` — 插件构建根目录
+- `root` — 项目源码根目录（由 `link` 自动推断或 `init` 设置），使 `link`/`unlink` 能自动为该项目重新生成 `CMakeUserPresets.json`
 
 ## mpf-dev CLI 命令
 
@@ -91,8 +102,13 @@ mpf-dev use <version>
 ### 组件开发
 
 ```bash
-# 在组件目录执行，注册为源码模式
-mpf-dev link <component> [--lib ./build/lib] [--qml ./qml]
+# 初始化项目（生成 CMakeUserPresets.json）
+mpf-dev init
+
+# 注册组件（构建完成后执行）
+mpf-dev link plugin <name> <build-path>      # 插件
+mpf-dev link component <name> <build-path>   # 库组件
+mpf-dev link host <build-path>               # Host
 
 # 取消注册
 mpf-dev unlink <component>
@@ -228,16 +244,20 @@ mpf-dev setup
 git clone https://github.com/QMPF/mpf-http-client
 cd mpf-http-client
 
-# 3. 注册为源码开发模式
-mpf-dev link http-client --lib ./build/lib --qml ./qml
+# 3. 初始化项目（生成 CMakeUserPresets.json）
+mpf-dev init
 
 # 4. 构建
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-make
+cmake --preset dev
+cmake --build build
 
-# 5. 运行测试（使用SDK的host，但加载自己的构建产物）
+# 5. 注册为源码开发模式（构建完成后）
+mpf-dev link component http-client ./build
+
+# 6. 运行测试（使用 SDK 的 host，但加载自己的构建产物）
 mpf-dev run
 
-# 6. 修改代码 → make → mpf-dev run（快速迭代）
+# 7. 日常迭代：修改代码 → cmake --build build → mpf-dev run
 ```
+
+> **依赖关系：** `init` 在 `link` 之前（init 生成当前项目的 CMake 配置）；`link` 在构建之后（link 需要 build 目录存在）。`link` 后会自动为所有已注册项目重新生成 `CMakeUserPresets.json`（不影响构建目录）。

@@ -238,39 +238,43 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/qml/YourCo DESTINATION qml)
 
 ## 三、开发流程
 
-### 3.1 注册组件为源码模式
+### 3.1 初始化项目
 
 ```bash
 cd mpf-my-component
 
-# 注册组件
-mpf-dev link my-component --lib ./build/lib --qml ./qml
-
-# 检查状态
-mpf-dev status
-```
-
-输出：
-```
-Components:
-  my-component [source]
-    lib: /path/to/mpf-my-component/build/lib
-    qml: /path/to/mpf-my-component/qml
+# 生成 CMakeUserPresets.json（自动检测 Qt、MinGW、SDK 路径）
+mpf-dev init
 ```
 
 ### 3.2 构建
 
 ```bash
-mkdir build && cd build
-
-# 配置
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+# 配置（使用 mpf-dev init 生成的 preset）
+cmake --preset dev
 
 # 构建
-cmake --build .
+cmake --build build
 ```
 
-### 3.3 运行测试
+### 3.3 注册组件
+
+构建完成后，将组件注册到 `dev.json`，使 host 能发现它：
+
+```bash
+# 插件
+mpf-dev link plugin my-plugin ./build
+
+# 库组件
+mpf-dev link component my-component ./build
+
+# 检查状态
+mpf-dev status
+```
+
+> **注意：** `link` 必须在构建之后执行，因为它需要 `build/` 目录下的构建产物路径存在。
+
+### 3.4 运行测试
 
 ```bash
 # 使用 SDK 的 host，但加载你的组件
@@ -285,13 +289,13 @@ mpf-dev run --debug
 - Windows: `PATH`
 - 两者: `QML_IMPORT_PATH`, `QT_PLUGIN_PATH`
 
-### 3.4 开发循环
+### 3.5 开发循环
 
 ```
-修改代码 → cmake --build . → mpf-dev run → 测试 → 重复
+修改代码 → cmake --build build → mpf-dev run → 测试 → 重复
 ```
 
-### 3.5 切换回二进制模式
+### 3.6 切换回二进制模式
 
 开发完成后：
 ```bash
@@ -440,12 +444,21 @@ CI 会自动：
 ### 5.1 同时开发多个组件
 
 ```bash
-# 注册多个组件
+# 在各项目中初始化并构建
 cd ~/projects/mpf-http-client
-mpf-dev link http-client --lib ./build/lib
+mpf-dev init
+cmake --preset dev
+cmake --build build
 
 cd ~/projects/mpf-ui-components
-mpf-dev link ui-components --lib ./build/lib --qml ./qml
+mpf-dev init
+cmake --preset dev
+cmake --build build
+
+# 构建完成后，注册组件
+mpf-dev link component ui-components ./build
+cd ~/projects/mpf-http-client
+mpf-dev link component http-client ./build
 
 # 查看状态
 mpf-dev status
@@ -471,9 +484,11 @@ export QT_PLUGIN_PATH="/home/user/.mpf-sdk/current/plugins"
 
 ### 6.1 QML 智能提示
 
-开发时 IDE 需要知道 SDK 的 QML 模块位置才能提供补全和语法检查。
+**推荐方式：** 执行 `mpf-dev init` 生成的 `CMakeUserPresets.json` 已包含 `QML_IMPORT_PATH`，Qt Creator 会自动读取。通常无需额外配置。
 
-**方法 1：系统环境变量（推荐）**
+如果仍需手动设置，可选以下方式：
+
+**方法 1：系统环境变量**
 
 Linux/macOS (`~/.bashrc` 或 `~/.zshrc`):
 ```bash
@@ -485,13 +500,7 @@ Windows (系统环境变量):
 QML_IMPORT_PATH = %USERPROFILE%\.mpf-sdk\current\qml
 ```
 
-**方法 2：CMakeLists.txt**
-```cmake
-# 让 Qt Creator 能找到 SDK 的 QML 模块
-set(QML_IMPORT_PATH "${MPF_SDK_ROOT}/qml" CACHE STRING "" FORCE)
-```
-
-**方法 3：Qt Creator 项目设置**
+**方法 2：Qt Creator 项目设置**
 1. 左侧 Projects → Build Settings
 2. Build Environment → Add
 3. 变量: `QML_IMPORT_PATH`
@@ -524,11 +533,8 @@ include_directories("${MPF_SDK_ROOT}/include")
 ### 6.3 调试配置
 
 **Qt Creator:**
-1. Projects → Run Settings
-2. Run Environment → Add:
-   - `LD_LIBRARY_PATH` (Linux) 或 `PATH` (Windows): 添加 `~/.mpf-sdk/current/lib`
-   - `QML_IMPORT_PATH`: `~/.mpf-sdk/current/qml`
-   - `QT_PLUGIN_PATH`: `~/.mpf-sdk/current/plugins`
+
+mpf-host 启动时自动读取 `~/.mpf-sdk/dev.json`，发现已注册的源码组件路径。因此在 Qt Creator 中直接运行/调试时**无需手动配置环境变量**，只需确保已通过 `mpf-dev link` 注册组件即可。
 
 **VS Code (launch.json)**:
 ```json
@@ -658,13 +664,15 @@ void MyPlugin::stop() {
 ## 十、流程总结
 
 ```
-1. mpf-dev setup                    # 安装 SDK
+1. mpf-dev setup                              # 安装 SDK
 2. 创建项目 + CMakeLists.txt
-3. mpf-dev link <component>         # 注册源码模式
-4. mkdir build && cd build
-5. cmake .. && cmake --build .      # 构建
-6. mpf-dev run                      # 测试
-7. 重复 5-6 直到完成
-8. git push + git tag               # 发布
-9. mpf-dev unlink <component>       # 切回二进制模式
+3. mpf-dev init                               # 生成 CMakeUserPresets.json
+4. cmake --preset dev && cmake --build build  # 配置 + 构建
+5. mpf-dev link plugin <name> ./build         # 注册到 dev.json（构建后）
+6. mpf-dev run                                # 测试
+7. 修改代码 → cmake --build build → mpf-dev run  # 日常迭代
+8. git push + git tag                         # 发布
+9. mpf-dev unlink <component>                 # 切回二进制模式
 ```
+
+> **依赖关系：** `init` 在 `link` 之前（init 生成当前项目自己的 CMake 配置）；`link` 在构建之后（link 需要 `build/plugins` 和 `build/qml` 目录存在）。
